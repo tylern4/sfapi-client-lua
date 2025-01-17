@@ -1,48 +1,24 @@
-local http=require("socket.http");
-local url = require("socket.url")
-local ltn12 = require("ltn12");
-local json = require("json");
+local sfapi_status = require "openapiclient.api.status_api"
+local sfapi_accounts = require "openapiclient.api.account_api"
+local sfapi_jobs = require "openapiclient.api.compute_api"
 
-local sfapi = {}
+local sfapi_client = {}
 
-function sfapi.get_sfapi_status(name) 
-    local request_body = [[]]
-    local response_body = {}
-    local status = ""
-
-    if name == nil then
-        name = "perlmutter"
+local function get_token()
+    local sfapi_token = os.getenv("SFAPI_TOKEN")
+    if sfapi_token == nil then
+        print("no token")
+        os.exit(1)
     end
-
-    local res, code, response_headers = http.request{
-        url = "https://api.nersc.gov/api/v1.2/status/" .. name,
-        method = "GET", 
-        headers = 
-        {
-            ["Content-Type"] = "application/x-www-form-urlencoded";
-            ["Content-Length"] = #request_body;
-        },
-        source = ltn12.source.string(request_body),
-        sink = ltn12.sink.table(response_body),
-    }
-
-
-    if code == 200 then
-        if type(response_body) == "table" then
-            status = json.loads(table.concat(response_body))
-        else
-            print("Not a table:", type(response_body))
-            os.exit(1)
-        end
-    end
-    return status
+    return sfapi_token
 end
 
-
-function sfapi.is_active(name) 
-    local status = sfapi.get_sfapi_status(name)
-    for key, val in pairs(status) do
-        if key == "status" and val == "active" then
+local function check_status_before_run()
+    local status = sfapi_status.new("api.nersc.gov", "/api/v1.2", { "https" })
+    local res = status:read_status_status_name_get("perlmutter")
+    if type(res) == "table" then
+        print(res.status)
+        if res.status == "active" then
             return true
         end
     end
@@ -50,40 +26,33 @@ function sfapi.is_active(name)
 end
 
 
-function sfapi.user() 
-    local request_body = [[]]
-    local response_body = {}
-    local status = ""
-
-    local sfapi_token = os.getenv("SFAPI_TOKEN")
-    if sfapi_token == nil then
-        print("no token")
+function sfapi_client.GetProjects()
+    local scheme = { "https" }
+    local accounts = sfapi_accounts.new("api.nersc.gov", "/api/v1.2", scheme)
+    accounts.access_token = "Bearer " .. get_token()
+    local projects, headers, errors = accounts:read_projects_account_projects_get()
+    if type(projects) == "table" then
+        return projects
+    else
+        print("Error in GetProjects", headers, errors)
         os.exit(1)
     end
-
-    local res, code, response_headers = http.request{
-        url = "https://api.nersc.gov/api/v1.2/account",
-        method = "GET", 
-        headers = 
-        {
-            ["Content-Type"] = "application/x-www-form-urlencoded";
-            ["Content-Length"] = #request_body;
-            ["accept"] = "application/json";
-            ["Authorization"] = "Bearer " .. sfapi_token;
-        },
-        source = ltn12.source.string(request_body),
-        sink = ltn12.sink.table(response_body),
-    }
-
-    if code == 200 then
-        if type(response_body) == "table" then
-            status = json.loads(table.concat(response_body))
-        else
-            print("Not a table:", type(response_body))
-            os.exit(1)
-        end
-    end
-    return status
 end
 
-return sfapi
+function sfapi_client.GetJobInfo(jobid)
+    local scheme = { "https" }
+    local jobs = sfapi_jobs.new("api.nersc.gov", "/api/v1.2", scheme)
+    jobs.access_token = "Bearer " .. get_token()
+    if not check_status_before_run() then
+        print("Let me check on " .. jobid)
+    end
+    local jobinfo, headers, errors = jobs:read_job_compute_jobs_machine_jobid_get("perlmutter", jobid, "true", "false")
+    if type(jobinfo) == "table" then
+        return jobinfo
+    else
+        print("Error in GetJobInfo", headers, errors)
+        os.exit(1)
+    end
+end
+
+return sfapi_client

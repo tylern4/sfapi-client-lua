@@ -11,11 +11,15 @@ auth_path = """
 
 
 for lua_file in Path().cwd().rglob("*.lua"):
+    did_file_get_updates = False
     with lua_file.open('r') as in_file:
         buf = in_file.readlines()
 
     with lua_file.open('w') as out_file:
         for line in buf:
             if 'req.headers:upsert("content-type", "application/json")' in line:
+                did_file_get_updates = True
                 line += auth_path
             out_file.write(line)
+    if did_file_get_updates:
+        print(f"Updated {lua_file.name}")
