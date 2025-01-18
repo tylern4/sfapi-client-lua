@@ -25,6 +25,9 @@ local function check_status_before_run()
     return false
 end
 
+function sfapi_client.GetStatus()
+    return check_status_before_run()
+end
 
 function sfapi_client.GetProjects()
     local scheme = { "https" }
