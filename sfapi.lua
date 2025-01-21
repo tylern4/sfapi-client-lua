@@ -8,7 +8,7 @@ local sfapi_client = {}
 local function get_token()
     local sfapi_token = os.getenv("SFAPI_TOKEN")
     if sfapi_token == nil then
-        print("no token")
+        error("Error: no token")
         os.exit(1)
     end
     return sfapi_token
@@ -33,7 +33,7 @@ end
 function sfapi_client.GetProjects()
     local scheme = { "https" }
     local accounts = sfapi_accounts.new("api.nersc.gov", "/api/v1.2", scheme)
-    accounts.access_token = "Bearer " .. get_token()
+    -- accounts.access_token = "Bearer " .. get_token()
     local projects, headers, errors = accounts:read_projects_account_projects_get()
     if type(projects) == "table" then
         return projects
@@ -46,7 +46,7 @@ end
 function sfapi_client.GetJobInfo(jobid)
     local scheme = { "https" }
     local jobs = sfapi_jobs.new("api.nersc.gov", "/api/v1.2", scheme)
-    jobs.access_token = "Bearer " .. get_token()
+    -- jobs.access_token = "Bearer " .. get_token()
     if not check_status_before_run() then
         print("Let me check on " .. jobid)
     end
@@ -59,12 +59,16 @@ function sfapi_client.GetJobInfo(jobid)
     end
 end
 
-function sfapi_client.StartGlobusTransfer()
+function sfapi_client.StartGlobusTransfer(source_uuid, target_uuid, source_dir, target_dir, label)
     local scheme = { "https" }
     local storage = sfapi_storage.new("api.nersc.gov", "/api/v1.2", scheme)
-    storage.access_token = "Bearer " .. get_token()
+    -- storage.access_token = "Bearer " .. get_token()
+    storage.access_token = "Bearer " .. "broken"
 
-    
+    local result, headers = storage:start_globus_transfer_storage_globus_post(source_uuid, target_uuid, source_dir, target_dir, label)
+
+    return result
+
 end
 
 return sfapi_client

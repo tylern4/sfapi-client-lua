@@ -42,3 +42,4 @@ luac.out
 # API Generated Contenet
 generated/
 openapitools.json
+openapi.json
