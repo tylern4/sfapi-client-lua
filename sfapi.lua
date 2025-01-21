@@ -1,6 +1,7 @@
 local sfapi_status = require "openapiclient.api.status_api"
 local sfapi_accounts = require "openapiclient.api.account_api"
 local sfapi_jobs = require "openapiclient.api.compute_api"
+local sfapi_storage = require "openapiclient.api.storage_api"
 
 local sfapi_client = {}
 
@@ -56,6 +57,14 @@ function sfapi_client.GetJobInfo(jobid)
         print("Error in GetJobInfo", headers, errors)
         os.exit(1)
     end
+end
+
+function sfapi_client.StartGlobusTransfer()
+    local scheme = { "https" }
+    local storage = sfapi_storage.new("api.nersc.gov", "/api/v1.2", scheme)
+    storage.access_token = "Bearer " .. get_token()
+
+    
 end
 
 return sfapi_client
