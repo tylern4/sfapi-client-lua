@@ -8,13 +8,13 @@ fi
 
 if [ ! -f $PWD/openapi.json ]; then
     echo "Pulling from ${SFAPI_URL}"
-    openapi-generator-cli generate -i ${SFAPI_URL} -g lua -o $PWD/generated
+    openapi-generator-cli generate -i ${SFAPI_URL} -g lua -o $PWD/generated --additional-properties packageName=sfapiclient
 else
     echo "Using $PWD/openapi.json"
-    openapi-generator-cli generate -i $PWD/openapi.json -g lua -o $PWD/generated
+    openapi-generator-cli generate -i $PWD/openapi.json -g lua -o $PWD/generated --additional-properties packageName=sfapiclient
 fi
 
 python3 ./add_auth.py
 
 cd $PWD/generated
-luarocks make openapiclient-1.0.0-1.rockspec
+luarocks make sfapiclient-1.0.0-1.rockspec

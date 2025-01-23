@@ -39,6 +39,9 @@ luac.out
 *.x86_64
 *.hex
 
+
+__pycache__
+
 # API Generated Contenet
 generated/
 openapitools.json

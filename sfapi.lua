@@ -1,9 +1,15 @@
-local sfapi_status = require "openapiclient.api.status_api"
-local sfapi_accounts = require "openapiclient.api.account_api"
-local sfapi_jobs = require "openapiclient.api.compute_api"
-local sfapi_storage = require "openapiclient.api.storage_api"
+local sfapi_status = require "sfapiclient.api.status_api"
+local sfapi_accounts = require "sfapiclient.api.account_api"
+local sfapi_jobs = require "sfapiclient.api.compute_api"
+local sfapi_storage = require "sfapiclient.api.storage_api"
 
 local sfapi_client = {}
+
+
+local API_URL = "api-dev.nersc.gov"
+local API_VER = "/api/v1.2"
+local SCHEMES = { "https" }
+
 
 local function get_token()
     local sfapi_token = os.getenv("SFAPI_TOKEN")
@@ -15,7 +21,7 @@ local function get_token()
 end
 
 local function check_status_before_run()
-    local status = sfapi_status.new("api.nersc.gov", "/api/v1.2", { "https" })
+    local status = sfapi_status.new(API_URL, API_VER, SCHEMES)
     local res = status:read_status_status_name_get("perlmutter")
     if type(res) == "table" then
         print(res.status)
@@ -31,9 +37,8 @@ function sfapi_client.GetStatus()
 end
 
 function sfapi_client.GetProjects()
-    local scheme = { "https" }
-    local accounts = sfapi_accounts.new("api.nersc.gov", "/api/v1.2", scheme)
-    -- accounts.access_token = "Bearer " .. get_token()
+    local accounts = sfapi_accounts.new(API_URL, API_VER, SCHEMES)
+    accounts.access_token = "Bearer " .. get_token()
     local projects, headers, errors = accounts:read_projects_account_projects_get()
     if type(projects) == "table" then
         return projects
@@ -44,9 +49,8 @@ function sfapi_client.GetProjects()
 end
 
 function sfapi_client.GetJobInfo(jobid)
-    local scheme = { "https" }
-    local jobs = sfapi_jobs.new("api.nersc.gov", "/api/v1.2", scheme)
-    -- jobs.access_token = "Bearer " .. get_token()
+    local jobs = sfapi_jobs.new(API_URL, API_VER, SCHEMES)
+    jobs.access_token = "Bearer " .. get_token()
     if not check_status_before_run() then
         print("Let me check on " .. jobid)
     end
@@ -60,15 +64,22 @@ function sfapi_client.GetJobInfo(jobid)
 end
 
 function sfapi_client.StartGlobusTransfer(source_uuid, target_uuid, source_dir, target_dir, label)
-    local scheme = { "https" }
-    local storage = sfapi_storage.new("api.nersc.gov", "/api/v1.2", scheme)
-    -- storage.access_token = "Bearer " .. get_token()
-    storage.access_token = "Bearer " .. "broken"
+    local storage = sfapi_storage.new(API_URL, API_VER, SCHEMES)
+    storage.access_token = "Bearer " .. get_token()
+    local result, headers, err = storage:start_globus_transfer_storage_globus_post(source_uuid, target_uuid, source_dir,
+        target_dir, label)
 
-    local result, headers = storage:start_globus_transfer_storage_globus_post(source_uuid, target_uuid, source_dir, target_dir, label)
 
     return result
+end
 
+function sfapi_client.GetGlobusTransfer(transfer_id)
+    local storage = sfapi_storage.new(API_URL, API_VER, SCHEMES)
+    storage.access_token = "Bearer " .. get_token()
+    local result, headers, err = storage:check_globus_transfer_storage_globus_globus_uuid_get(transfer_id)
+
+
+    return result
 end
 
 return sfapi_client
