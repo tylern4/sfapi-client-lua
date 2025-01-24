@@ -6,16 +6,24 @@ local sfapi_storage = require "sfapiclient.api.storage_api"
 local sfapi_client = {}
 
 
-local API_URL = "api-dev.nersc.gov"
+local API_URL = "apii-dev.nersc.gov"
 local API_VER = "/api/v1.2"
 local SCHEMES = { "https" }
 
 
+local function readfile(filename)
+    local f = assert(io.open(filename, "rb"))
+    local content = f:read("*all")
+    -- remove newline from the file and only keep text
+    content = content:gsub("[\n\r]", "")
+    f:close()
+    return content
+end
+
 local function get_token()
     local sfapi_token = os.getenv("SFAPI_TOKEN")
     if sfapi_token == nil then
-        error("Error: no token")
-        os.exit(1)
+        sfapi_token = readfile("token")
     end
     return sfapi_token
 end
@@ -68,8 +76,7 @@ function sfapi_client.StartGlobusTransfer(source_uuid, target_uuid, source_dir, 
     storage.access_token = "Bearer " .. get_token()
     local result, headers, err = storage:start_globus_transfer_storage_globus_post(source_uuid, target_uuid, source_dir,
         target_dir, label)
-
-
+    
     return result
 end
 
@@ -77,7 +84,6 @@ function sfapi_client.GetGlobusTransfer(transfer_id)
     local storage = sfapi_storage.new(API_URL, API_VER, SCHEMES)
     storage.access_token = "Bearer " .. get_token()
     local result, headers, err = storage:check_globus_transfer_storage_globus_globus_uuid_get(transfer_id)
-
 
     return result
 end
