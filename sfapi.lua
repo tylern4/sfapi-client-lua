@@ -6,7 +6,7 @@ local sfapi_storage = require "sfapiclient.api.storage_api"
 local sfapi_client = {}
 
 
-local API_URL = "apii-dev.nersc.gov"
+local API_URL = "api.nersc.gov"
 local API_VER = "/api/v1.2"
 local SCHEMES = { "https" }
 
@@ -32,7 +32,6 @@ local function check_status_before_run()
     local status = sfapi_status.new(API_URL, API_VER, SCHEMES)
     local res = status:read_status_status_name_get("perlmutter")
     if type(res) == "table" then
-        print(res.status)
         if res.status == "active" then
             return true
         end
@@ -74,7 +73,7 @@ end
 function sfapi_client.StartGlobusTransfer(source_uuid, target_uuid, source_dir, target_dir, label)
     local storage = sfapi_storage.new(API_URL, API_VER, SCHEMES)
     storage.access_token = "Bearer " .. get_token()
-    local result, headers, err = storage:start_globus_transfer_storage_globus_post(source_uuid, target_uuid, source_dir,
+    local result, headers, err = storage:start_globus_transfer_storage_globus_transfer_post(source_uuid, target_uuid, source_dir,
         target_dir, label)
     
     return result
@@ -83,7 +82,7 @@ end
 function sfapi_client.GetGlobusTransfer(transfer_id)
     local storage = sfapi_storage.new(API_URL, API_VER, SCHEMES)
     storage.access_token = "Bearer " .. get_token()
-    local result, headers, err = storage:check_globus_transfer_storage_globus_globus_uuid_get(transfer_id)
+    local result, headers, err = storage:check_globus_transfer_storage_globus_transfer_globus_uuid_get(transfer_id)
 
     return result
 end
